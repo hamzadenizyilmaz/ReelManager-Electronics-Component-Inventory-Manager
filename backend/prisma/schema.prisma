@@ -1,0 +1,337 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  admin
+  user
+  viewer
+}
+
+enum UserStatus {
+  active
+  inactive
+}
+
+enum ComponentStatus {
+  active
+  passive
+  archived
+}
+
+enum MovementType {
+  IN
+  OUT
+  RESERVE
+  RELEASE
+  ADJUST
+  DAMAGED
+  LOST
+  RETURN
+}
+
+enum ProjectStatus {
+  draft
+  active
+  completed
+  cancelled
+}
+
+model User {
+  id            Int             @id @default(autoincrement())
+  name          String
+  email         String          @unique
+  passwordHash  String          @map("password_hash")
+  role          UserRole        @default(user)
+  status        UserStatus      @default(active)
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  movements     StockMovement[]
+  projects      Project[]       @relation("ProjectCreator")
+  activityLogs  ActivityLog[]
+
+  @@map("users")
+}
+
+model Category {
+  id            Int         @id @default(autoincrement())
+  name          String      @unique
+  nameTr        String?     @map("name_tr")
+  nameEn        String?     @map("name_en")
+  slug          String      @unique
+  description   String?     @db.Text
+  descriptionTr String?     @map("description_tr") @db.Text
+  descriptionEn String?     @map("description_en") @db.Text
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  components  Component[]
+
+  @@map("categories")
+}
+
+model Supplier {
+  id           Int                 @id @default(autoincrement())
+  name         String              @unique
+  nameTr       String?             @map("name_tr")
+  nameEn       String?             @map("name_en")
+  website      String?
+  contactName  String?             @map("contact_name")
+  contactEmail String?             @map("contact_email")
+  phone        String?
+  notes        String?             @db.Text
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+  components   Component[]
+  orders       PurchaseOrder[]
+
+  @@map("suppliers")
+}
+
+model StorageLocation {
+  id            Int               @id @default(autoincrement())
+  name          String
+  nameTr        String?           @map("name_tr")
+  nameEn        String?           @map("name_en")
+  code          String            @unique
+  description   String?           @db.Text
+  descriptionTr String?           @map("description_tr") @db.Text
+  descriptionEn String?           @map("description_en") @db.Text
+  parentId    Int?              @map("parent_id")
+  parent      StorageLocation?  @relation("LocationTree", fields: [parentId], references: [id])
+  children    StorageLocation[] @relation("LocationTree")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+  components  Component[]
+
+  @@map("storage_locations")
+}
+
+model Component {
+  id                       Int                 @id @default(autoincrement())
+  internalSku              String              @unique @map("internal_sku")
+  supplierPartNumber       String?             @map("supplier_part_number")
+  manufacturerPartNumber   String              @map("manufacturer_part_number")
+  manufacturer             String?
+  supplierId               Int?                @map("supplier_id")
+  categoryId               Int                 @map("category_id")
+  name                     String
+  description              String?             @db.Text
+  packageCase              String?             @map("package_case")
+  value                    String?
+  valueNumeric             Decimal?            @map("value_numeric") @db.Decimal(18, 6)
+  unit                     String?
+  tolerance                String?
+  voltageRating            String?             @map("voltage_rating")
+  currentRating            String?             @map("current_rating")
+  powerRating              String?             @map("power_rating")
+  temperatureCoefficient   String?             @map("temperature_coefficient")
+  dielectric               String?
+  material                 String?
+  footprint                String?
+  mountingType             String?             @map("mounting_type")
+  quantityTotal            Int                 @default(0) @map("quantity_total")
+  quantityAvailable        Int                 @default(0) @map("quantity_available")
+  quantityReserved         Int                 @default(0) @map("quantity_reserved")
+  minimumStock             Int                 @default(0) @map("minimum_stock")
+  reorderQuantity          Int                 @default(0) @map("reorder_quantity")
+  storageLocationId        Int?                @map("storage_location_id")
+  barcode                  String?             @unique
+  qrCode                   String?             @map("qr_code")
+  datasheetUrl             String?             @map("datasheet_url")
+  productUrl               String?             @map("product_url")
+  imageUrl                 String?             @map("image_url")
+  notes                    String?             @db.Text
+  status                   ComponentStatus     @default(active)
+  createdAt                DateTime            @default(now()) @map("created_at")
+  updatedAt                DateTime            @updatedAt @map("updated_at")
+
+  supplier                 Supplier?           @relation(fields: [supplierId], references: [id])
+  category                 Category            @relation(fields: [categoryId], references: [id])
+  storageLocation          StorageLocation?    @relation(fields: [storageLocationId], references: [id])
+  stockMovements           StockMovement[]
+  projectBomItems          ProjectBomItem[]
+  purchaseOrderItems       PurchaseOrderItem[]
+  componentLabels          ComponentLabel[]
+
+  @@index([manufacturerPartNumber])
+  @@index([supplierPartNumber])
+  @@index([internalSku])
+  @@index([barcode])
+  @@index([categoryId])
+  @@index([supplierId])
+  @@index([storageLocationId])
+  @@unique([manufacturerPartNumber, packageCase, value])
+  @@map("components")
+}
+
+model StockMovement {
+  id             Int          @id @default(autoincrement())
+  componentId    Int          @map("component_id")
+  movementType   MovementType @map("movement_type")
+  quantity       Int
+  quantityBefore Int          @map("quantity_before")
+  quantityAfter  Int          @map("quantity_after")
+  reason         String?
+  projectId      Int?         @map("project_id")
+  userId         Int?         @map("user_id")
+  notes          String?      @db.Text
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  component      Component    @relation(fields: [componentId], references: [id])
+  project        Project?     @relation(fields: [projectId], references: [id])
+  user           User?        @relation(fields: [userId], references: [id])
+
+  @@index([componentId])
+  @@index([movementType])
+  @@index([createdAt])
+  @@map("stock_movements")
+}
+
+model Project {
+  id          Int              @id @default(autoincrement())
+  name        String
+  code        String           @unique
+  description String?          @db.Text
+  status      ProjectStatus    @default(draft)
+  createdBy   Int?             @map("created_by")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  creator     User?            @relation("ProjectCreator", fields: [createdBy], references: [id])
+  bomItems    ProjectBomItem[]
+  movements   StockMovement[]
+
+  @@map("projects")
+}
+
+model ProjectBomItem {
+  id                  Int       @id @default(autoincrement())
+  projectId           Int       @map("project_id")
+  componentId         Int       @map("component_id")
+  referenceDesignator String?   @map("reference_designator")
+  requiredQuantity    Int       @map("required_quantity")
+  usedQuantity        Int       @default(0) @map("used_quantity")
+  reservedQuantity    Int       @default(0) @map("reserved_quantity")
+  notes               String?   @db.Text
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  project             Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  component           Component @relation(fields: [componentId], references: [id])
+
+  @@index([projectId])
+  @@index([componentId])
+  @@map("project_bom_items")
+}
+
+model PurchaseOrder {
+  id          Int                 @id @default(autoincrement())
+  supplierId  Int                 @map("supplier_id")
+  orderNumber String?             @map("order_number")
+  status      String              @default("draft")
+  totalPrice  Decimal?            @map("total_price") @db.Decimal(12, 2)
+  currency    String              @default("TRY")
+  orderDate   DateTime?           @map("order_date")
+  expectedDate DateTime?          @map("expected_date")
+  notes       String?             @db.Text
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  supplier    Supplier            @relation(fields: [supplierId], references: [id])
+  items       PurchaseOrderItem[]
+
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id                 Int            @id @default(autoincrement())
+  purchaseOrderId    Int            @map("purchase_order_id")
+  componentId        Int?           @map("component_id")
+  supplierPartNumber String?        @map("supplier_part_number")
+  quantity           Int
+  unitPrice          Decimal?       @map("unit_price") @db.Decimal(12, 4)
+  totalPrice         Decimal?       @map("total_price") @db.Decimal(12, 2)
+  receivedQuantity   Int            @default(0) @map("received_quantity")
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+
+  purchaseOrder      PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  component          Component?     @relation(fields: [componentId], references: [id])
+
+  @@map("purchase_order_items")
+}
+
+model Label {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
+  color           String?
+  createdAt       DateTime         @default(now()) @map("created_at")
+  componentLabels ComponentLabel[]
+
+  @@map("labels")
+}
+
+model ComponentLabel {
+  id          Int       @id @default(autoincrement())
+  componentId Int       @map("component_id")
+  labelId     Int       @map("label_id")
+  component   Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  label       Label     @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@unique([componentId, labelId])
+  @@map("component_labels")
+}
+
+model ActivityLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int?     @map("user_id")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   Int?     @map("entity_id")
+  oldValue   Json?    @map("old_value")
+  newValue   Json?    @map("new_value")
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       User?    @relation(fields: [userId], references: [id])
+
+  @@index([entityType, entityId])
+  @@map("activity_logs")
+}
+
+model ComponentEnrichmentCache {
+  id                     Int      @id @default(autoincrement())
+  query                  String
+  manufacturerPartNumber String?  @map("manufacturer_part_number")
+  source                 String
+  rawResponseJson        Json?    @map("raw_response_json")
+  normalizedDataJson     Json?    @map("normalized_data_json")
+  confidenceScore        Decimal? @map("confidence_score") @db.Decimal(5, 2)
+  expiresAt              DateTime @map("expires_at")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  @@index([query])
+  @@index([manufacturerPartNumber])
+  @@index([source])
+  @@index([expiresAt])
+  @@map("component_enrichment_cache")
+}
+
+
+model SystemSetting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     Json
+  updatedBy Int?     @map("updated_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}
