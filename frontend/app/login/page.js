@@ -88,7 +88,7 @@ export default function LoginPage() {
 
                 <div>
                   <p className="text-sm font-semibold tracking-wide text-white">
-                    Reel Manager v2.1.0
+                    Reel Manager v2.2.0 Enterprise
                   </p>
                   <p className="text-xs text-slate-400">
                     {isTr
@@ -135,7 +135,7 @@ export default function LoginPage() {
 
             <div className="flex items-center justify-between text-xs text-slate-500">
               <span>
-                © {new Date().getFullYear()} Reel Manager v2.1.0 - Hamza Deniz Yılmaz
+                © {new Date().getFullYear()} Reel Manager v2.2.0 Enterprise - Hamza Deniz Yılmaz
               </span>
               <span>
                 {isTr ? "Güvenli erişim noktası" : "Secure access point"}
@@ -154,7 +154,7 @@ export default function LoginPage() {
 
                 <div>
                   <p className="text-sm font-semibold text-white">
-                    Reel Manager
+                    Reel Manager v2.2.0 Enterprise
                   </p>
                   <p className="text-xs text-slate-400">
                     {isTr ? "Stok Yönetimi" : "Inventory Platform"}

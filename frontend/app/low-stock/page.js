@@ -19,81 +19,70 @@ export default function Page() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      endpoints.stock.low(),
-      endpoints.stock.out()
-    ])
-      .then(([lowStockResponse, outStockResponse]) => {
-        const lowStockRows = unwrap(lowStockResponse) || [];
-        const outStockRows = unwrap(outStockResponse) || [];
-
-        setRows([...lowStockRows, ...outStockRows]);
-      })
-      .catch((error) => {
-        toast(apiError(error), "error");
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+    Promise.all([endpoints.stock.low(), endpoints.stock.out()])
+      .then(([a, b]) =>
+        setRows([
+          ...(unwrap(a) || []),
+          ...(unwrap(b) || []),
+        ])
+      )
+      .catch((e) => toast(apiError(e), "error"))
+      .finally(() => setLoading(false));
   }, [toast]);
 
   const cols = [
     {
       key: "pn",
       header: "Part Number",
-      render: (row) => (
+      render: (r) => (
         <Link
           className="font-bold text-brand-500"
-          href={`/components/${row.id}`}
+          href={`/components/${r.id}`}
         >
-          {row.manufacturerPartNumber}
+          {r.manufacturerPartNumber}
         </Link>
-      )
+      ),
     },
     {
       key: "value",
-      header: "Değer"
+      header: "Değer",
     },
     {
       key: "pkg",
       header: "Paket",
-      render: (row) => row.packageCase
+      render: (r) => r.packageCase,
     },
     {
       key: "available",
       header: "Mevcut",
-      render: (row) => row.quantityAvailable
+      render: (r) => r.quantityAvailable,
     },
     {
       key: "min",
       header: "Minimum",
-      render: (row) => row.minimumStock
+      render: (r) => r.minimumStock,
     },
     {
       key: "status",
       header: "Durum",
-      render: (row) => <StatusBadge status={stockStatus(row)} />
+      render: (r) => <StatusBadge status={stockStatus(r)} />,
     },
     {
       key: "supplier",
       header: "Tedarikçi",
-      render: (row) => row.supplier?.name || "-"
-    }
+      render: (r) => r.supplier?.name || "-",
+    },
   ];
 
   return (
     <AppShell>
       <PageHeader
-        eyebrow="Reel Manager - Alerts"
+        eyebrow="Alerts"
         title="Düşük Stok ve Kritikler"
         description="Minimum seviyenin altındaki ve stokta olmayan komponentleri hızlıca gör."
       />
 
-      <DataTable
-        columns={cols}
-        rows={rows}
-        loading={loading}
-      />
+      <DataTable columns={cols} rows={rows} loading={loading} />
     </AppShell>
   );
 }

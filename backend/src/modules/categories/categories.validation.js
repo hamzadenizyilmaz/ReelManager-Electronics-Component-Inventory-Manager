@@ -5,9 +5,13 @@ const schema = Joi.object({
   slug: Joi.string().trim().max(140).allow("", null),
   description: Joi.string().trim().max(1000).allow("", null),
   name_tr: Joi.string().trim().max(120).allow("", null),
+  nameTr: Joi.string().trim().max(120).allow("", null),
   name_en: Joi.string().trim().max(120).allow("", null),
+  nameEn: Joi.string().trim().max(120).allow("", null),
   description_tr: Joi.string().trim().max(1000).allow("", null),
-  description_en: Joi.string().trim().max(1000).allow("", null)
+  descriptionTr: Joi.string().trim().max(1000).allow("", null),
+  description_en: Joi.string().trim().max(1000).allow("", null),
+  descriptionEn: Joi.string().trim().max(1000).allow("", null)
 });
 
 module.exports = { schema };

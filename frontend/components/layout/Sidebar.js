@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, AlertTriangle, Archive, BarChart3, Boxes, Building2, ClipboardList, Database, FileInput, FolderKanban, Github, MapPin, PackageSearch, Printer, QrCode, Settings, ShoppingCart, Tags, X } from "lucide-react";
+import { Activity, Github, AlertTriangle, Archive, BarChart3, Boxes, Building2, ClipboardList, Database, FileInput, FolderKanban, MapPin, PackageSearch, Printer, QrCode, Settings, ShoppingCart, Tags, Users, GitBranch, X } from "lucide-react";
 import { useUI } from "../providers/Providers";
 import { cn } from "../../lib/formatters";
 
@@ -19,6 +19,8 @@ const nav = [
   { href: "/reports", key: "reports", icon: Archive },
   { href: "/purchase", key: "purchase", icon: ShoppingCart },
   { href: "/activity", key: "activity", icon: Activity },
+  { href: "/users", key: "users", icon: Users },
+  { href: "/updates", key: "updates", icon: GitBranch },
   { href: "/categories", key: "categories", icon: Tags },
   { href: "/suppliers", key: "suppliers", icon: Building2 },
   { href: "/locations", key: "locations", icon: MapPin },
@@ -64,7 +66,7 @@ export default function Sidebar({ open, onClose }) {
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-xs font-bold uppercase tracking-[.18em] text-slate-500 dark:text-slate-400">
-                Reel Manager v2.1.0 Enterprise
+                Reel Manager v2.2.0 Enterprise
               </div>
             </div>
             <Github className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
@@ -81,9 +83,7 @@ export default function Sidebar({ open, onClose }) {
           </a>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <span className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">v2.1.0</span>
-            <span className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">Next.js 15</span>
-            <span className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">Node.js</span>
+            <span className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">v2.2.0 Enterprise</span>
           </div>
         </div>
       </aside>

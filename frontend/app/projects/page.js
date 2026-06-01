@@ -1,39 +1,35 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import Link from "next/link";
+import { Edit3, ExternalLink, Plus, Trash2 } from "lucide-react";
 
 import AppShell from "../../components/layout/AppShell";
 import PageHeader from "../../components/ui/PageHeader";
-import DataTable from "../../components/tables/DataTable";
-import StatusBadge from "../../components/ui/StatusBadge";
+import ConfirmModal from "../../components/ui/ConfirmModal";
 
-import { endpoints, unwrap, apiError } from "../../lib/api";
+import { apiError, endpoints, unwrap } from "../../lib/api";
 import { formatDate } from "../../lib/formatters";
+import { statusText } from "../../lib/i18n-lite";
 import { useUI } from "../../components/providers/Providers";
 
-export default function Page() {
-  const { toast } = useUI();
+export default function ProjectsPage() {
+  const { toast, lang = "tr" } = useUI();
 
-  const [rows, setRows] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const [form, setForm] = useState({
-    name: "",
-    code: "",
-    description: "",
-    status: "draft"
-  });
+  const [remove, setRemove] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function load() {
     setLoading(true);
 
     try {
-      const data = unwrap(await endpoints.projects.list());
-      setRows(data || []);
-    } catch (error) {
-      toast(apiError(error), "error");
+      const payload = unwrap(await endpoints.projects.list());
+
+      setProjects(payload?.items || payload?.projects || payload || []);
+    } catch (e) {
+      toast(apiError(e), "error");
     } finally {
       setLoading(false);
     }
@@ -43,153 +39,151 @@ export default function Page() {
     load();
   }, []);
 
-  async function submit(event) {
-    event.preventDefault();
+  async function confirmRemove() {
+    if (!remove) return;
+
+    setDeleting(true);
 
     try {
-      await endpoints.projects.create(form);
+      await endpoints.projects.remove(remove.id);
 
-      toast("Proje oluşturuldu", "success");
-
-      setForm({
-        name: "",
-        code: "",
-        description: "",
-        status: "draft"
-      });
-
+      toast("Proje silindi", "success");
+      setRemove(null);
       load();
-    } catch (error) {
-      toast(apiError(error), "error");
+    } catch (e) {
+      toast(apiError(e), "error");
+    } finally {
+      setDeleting(false);
     }
   }
-
-  const cols = [
-    {
-      key: "name",
-      header: "Proje",
-      render: (row) => (
-        <Link
-          className="font-bold text-brand-500"
-          href={`/projects/${row.id}`}
-        >
-          {row.name}
-        </Link>
-      )
-    },
-    {
-      key: "code",
-      header: "Kod"
-    },
-    {
-      key: "status",
-      header: "Durum",
-      render: (row) => <StatusBadge status={row.status} />
-    },
-    {
-      key: "bom",
-      header: "BOM",
-      render: (row) => row.bomItems?.length || 0
-    },
-    {
-      key: "date",
-      header: "Tarih",
-      render: (row) => formatDate(row.updatedAt)
-    }
-  ];
 
   return (
     <AppShell>
       <PageHeader
-        eyebrow="Reel Manager - BOM Center"
+        eyebrow="ReelManager - BOM Center"
         title="Projeler / BOM"
-        description="Üretim ve prototip projeleri için BOM oluştur, stok uygunluğunu kontrol et."
+        description="Üretim ve prototip projelerini oluşturun, düzenleyin ve takip edin."
         actions={
-          <button
-            className="btn-primary"
-            onClick={() =>
-              document
-                .getElementById("project-form")
-                ?.scrollIntoView({ behavior: "smooth" })
-            }
-          >
+          <Link className="btn-primary" href="/projects/new">
             <Plus className="h-4 w-4" />
             Yeni Proje
-          </button>
+          </Link>
         }
       />
 
-      <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
-        <form
-          id="project-form"
-          onSubmit={submit}
-          className="page-card space-y-4 p-5"
-        >
-          <h2 className="text-lg font-black">Yeni Proje</h2>
+      <section className="page-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-widest text-slate-500 dark:border-slate-800 dark:bg-slate-900">
+              <tr>
+                <th className="px-4 py-4">Proje</th>
+                <th className="px-4 py-4">Kod / Slug</th>
+                <th className="px-4 py-4">Durum</th>
+                <th className="px-4 py-4">BOM</th>
+                <th className="px-4 py-4">Tarih</th>
+                <th className="px-4 py-4 text-right">İşlemler</th>
+              </tr>
+            </thead>
 
-          <input
-            className="input"
-            placeholder="Proje adı"
-            value={form.name}
-            onChange={(event) =>
-              setForm({
-                ...form,
-                name: event.target.value
-              })
-            }
-          />
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+              {loading ? (
+                <tr>
+                  <td
+                    colSpan="6"
+                    className="p-10 text-center text-slate-500"
+                  >
+                    Yükleniyor...
+                  </td>
+                </tr>
+              ) : projects.length ? (
+                projects.map((row) => (
+                  <tr
+                    key={row.id}
+                    className="bg-white hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-900/70"
+                  >
+                    <td className="px-4 py-4 font-semibold">
+                      <Link
+                        className="text-cyan-700 hover:underline dark:text-cyan-300"
+                        href={`/projects/${row.id}`}
+                      >
+                        {row.name}
+                      </Link>
+                    </td>
 
-          <input
-            className="input"
-            placeholder="Kod"
-            value={form.code}
-            onChange={(event) =>
-              setForm({
-                ...form,
-                code: event.target.value
-              })
-            }
-          />
+                    <td className="px-4 py-4 font-mono text-xs text-slate-500">
+                      {row.code || `project-${row.id}`}
+                    </td>
 
-          <select
-            className="select"
-            value={form.status}
-            onChange={(event) =>
-              setForm({
-                ...form,
-                status: event.target.value
-              })
-            }
-          >
-            <option value="draft">Draft</option>
-            <option value="active">Active</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+                    <td className="px-4 py-4">
+                      <span className="chip">
+                        {statusText(row.status, lang)}
+                      </span>
+                    </td>
 
-          <textarea
-            className="input min-h-28"
-            placeholder="Açıklama"
-            value={form.description}
-            onChange={(event) =>
-              setForm({
-                ...form,
-                description: event.target.value
-              })
-            }
-          />
+                    <td className="px-4 py-4">
+                      {row._count?.bomItems || row.bomItems?.length || 0}
+                    </td>
 
-          <button className="btn-primary w-full">
-            Kaydet
-          </button>
-        </form>
+                    <td className="px-4 py-4 text-slate-500">
+                      {formatDate(row.createdAt)}
+                    </td>
 
-        <DataTable
-          columns={cols}
-          rows={rows}
-          loading={loading}
-        />
-      </div>
+                    <td className="px-4 py-4">
+                      <div className="flex justify-end gap-2">
+                        <Link
+                          className="btn-ghost px-3 py-2"
+                          href={`/projects/${row.id}`}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          Detay
+                        </Link>
+
+                        <Link
+                          className="btn-ghost px-3 py-2"
+                          href={`/projects/${row.id}/edit`}
+                        >
+                          <Edit3 className="h-4 w-4" />
+                          Düzenle
+                        </Link>
+
+                        <button
+                          className="btn-danger px-3 py-2"
+                          onClick={() => setRemove(row)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Sil
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan="6"
+                    className="p-14 text-center text-slate-500"
+                  >
+                    Kayıt bulunamadı.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <ConfirmModal
+        open={Boolean(remove)}
+        danger
+        title="Proje silinsin mi?"
+        description={`${
+          remove?.name || "Proje"
+        } silinecek. Bu işlem geri alınamaz.`}
+        confirmText="Sil"
+        loading={deleting}
+        onClose={() => setRemove(null)}
+        onConfirm={confirmRemove}
+      />
     </AppShell>
   );
 }

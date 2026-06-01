@@ -6,33 +6,32 @@ Thank you for considering a contribution to ReelManager.
 
 1. Fork the repository.
 2. Create a feature branch.
-3. Make your changes.
-4. Run frontend and backend checks.
+3. Keep frontend and backend changes separated where possible.
+4. Run local checks before opening a pull request.
 5. Open a pull request with a clear explanation.
 
 ## Branch Naming
 
-Use clear branch names:
-
-```text
-feature/component-enrichment
-fix/login-token-guard
-ui/settings-center
-security/auth-hardening
+```txt
+feature/component-edit
+fix/auth-token-storage
+docs/api-reference
+chore/ci-update
 ```
 
-## Commit Style
+## Local Checks
 
-Recommended format:
+Backend:
 
-```text
-feat: add datasheet enrichment cache
-fix: persist auth token for dashboard requests
-docs: improve deployment guide
-security: harden route protection
+```bash
+cd backend
+npm install
+npx prisma validate
+node -c src/app.js
+npm run dev
 ```
 
-## Frontend Checks
+Frontend:
 
 ```bash
 cd frontend
@@ -40,22 +39,10 @@ npm install
 npm run build
 ```
 
-## Backend Checks
+## Pull Request Rules
 
-```bash
-cd backend
-npm install
-npx prisma validate
-node -c src/app.js
-node -c src/server.js
-```
-
-## Pull Request Checklist
-
-- [ ] The change has a clear purpose.
-- [ ] The UI works in dark and light mode.
-- [ ] The UI works on mobile, tablet and desktop.
-- [ ] API calls use the centralized API client.
-- [ ] Protected pages require authentication.
-- [ ] Sensitive values are not committed.
-- [ ] Documentation was updated if needed.
+- Explain what changed.
+- Include screenshots for UI changes.
+- Include database migration notes for Prisma changes.
+- Do not commit `.env` files.
+- Do not expose API keys.

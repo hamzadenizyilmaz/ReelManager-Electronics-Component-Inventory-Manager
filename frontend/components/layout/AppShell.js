@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "../../store/auth.store";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
+import Footer from "./Footer";
 import { Loader2 } from "lucide-react";
 
 export default function AppShell({ children }) {
@@ -38,6 +39,7 @@ export default function AppShell({ children }) {
         <Topbar onMenu={() => setSidebarOpen(true)} />
         <main className="mx-auto w-full max-w-[1600px] px-4 pb-10 pt-4 sm:px-6 lg:px-8">
           {children}
+          <Footer />
         </main>
       </div>
     </div>

@@ -1,54 +1,18 @@
 "use client";
 
-import AppShell from "../../components/layout/AppShell";
-import ResourceManager from "../../components/forms/ResourceManager";
+import MasterDataListPage from "../../components/pages/MasterDataListPage";
 
 import { endpoints } from "../../lib/api";
 
-export default function Page() {
+export default function SuppliersPage() {
   return (
-    <AppShell>
-      <ResourceManager
-        title="Tedarikçiler"
-        description="Tedarikçi datası, iletişim bilgileri ve TR/EN görünen ad alanları."
-        resource="Tedarikçi"
-        endpoint={endpoints.suppliers}
-        fields={[
-          {
-            name: "name",
-            label: "Teknik Ad"
-          },
-          {
-            name: "name_tr",
-            label: "Ad TR"
-          },
-          {
-            name: "name_en",
-            label: "Name EN"
-          },
-          {
-            name: "website",
-            label: "Website"
-          },
-          {
-            name: "contactName",
-            label: "Yetkili"
-          },
-          {
-            name: "contactEmail",
-            label: "Email"
-          },
-          {
-            name: "phone",
-            label: "Telefon"
-          },
-          {
-            name: "notes",
-            label: "Notlar",
-            type: "textarea"
-          }
-        ]}
-      />
-    </AppShell>
+    <MasterDataListPage
+      title="Tedarikçiler"
+      description="Tedarikçi kayıtlarını tek sayfadan yönetin."
+      newHref="/suppliers/new"
+      baseHref="/suppliers"
+      endpoint={endpoints.suppliers}
+      type="supplier"
+    />
   );
 }

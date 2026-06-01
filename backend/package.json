@@ -1,6 +1,6 @@
 {
   "name": "smd-stock-manager-backend",
-  "version": "1.0.0",
+  "version": "2.2.0-enterprise",
   "private": true,
   "description": "Backend API for SMD Stock Manager",
   "main": "src/server.js",

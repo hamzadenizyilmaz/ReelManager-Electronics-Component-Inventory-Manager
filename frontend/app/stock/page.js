@@ -19,47 +19,37 @@ export default function Page() {
   useEffect(() => {
     endpoints.stock
       .movements()
-      .then((response) => {
-        setRows(unwrap(response) || []);
-      })
-      .catch((error) => {
-        toast(apiError(error), "error");
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+      .then((r) => setRows(unwrap(r) || []))
+      .catch((e) => toast(apiError(e), "error"))
+      .finally(() => setLoading(false));
   }, [toast]);
 
   const cols = [
     {
       key: "type",
       header: "Tip",
-      render: (row) => (
-        <span className="chip">
-          {row.movementType}
-        </span>
-      )
+      render: (r) => <span className="chip">{r.movementType}</span>,
     },
     {
       key: "pn",
       header: "Part",
-      render: (row) => row.component?.manufacturerPartNumber || "-"
+      render: (r) => r.component?.manufacturerPartNumber || "-",
     },
     {
       key: "qty",
       header: "Adet",
-      render: (row) => row.quantity
+      render: (r) => r.quantity,
     },
     {
       key: "reason",
       header: "Sebep",
-      render: (row) => row.reason || "-"
+      render: (r) => r.reason || "-",
     },
     {
       key: "date",
       header: "Tarih",
-      render: (row) => formatDate(row.createdAt)
-    }
+      render: (r) => formatDate(r.createdAt),
+    },
   ];
 
   return (
@@ -70,11 +60,7 @@ export default function Page() {
         description="Giriş, çıkış, rezerve, release ve kayıp hareketlerini audit mantığıyla izle."
       />
 
-      <DataTable
-        columns={cols}
-        rows={rows}
-        loading={loading}
-      />
+      <DataTable columns={cols} rows={rows} loading={loading} />
     </AppShell>
   );
 }

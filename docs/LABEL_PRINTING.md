@@ -1,31 +1,74 @@
 # Label Printing
 
-ReelManager provides a Label Printing Studio for electronics inventory labels.
+## Overview
 
-## Goals
+ReelManager includes a label printing studio for electronic component inventory labels.
 
-- Print only labels, not the full application page
-- Support common thermal label sizes
-- Support QR-based component identification
-- Support browser print and ZPL copy output
+## Supported Label Profiles
 
-## Profiles
+Examples:
 
-- Thermal 50 × 25 mm
-- Thermal 40 × 30 mm
-- Thermal 58 × 40 mm
-- Brother DK-11201 29 × 90 mm
-- DYMO 89 × 36 mm
-- Mini QR 30 × 20 mm
-- A4 Sheet 70 × 37 mm
+```txt
+Thermal 50 x 25 mm
+Thermal 40 x 30 mm
+Thermal 58 x 40 mm
+Brother DK-11201 29 x 90 mm
+DYMO 89 x 36 mm
+Mini QR 30 x 20 mm
+A4 Sheet 70 x 37 mm
+```
 
-## Recommended Browser Print Settings
+## Printable Fields
 
-- Scale: 100%
-- Margins: None
-- Headers/footers: Off
-- Correct printer profile selected
+Users can choose which fields appear on the label:
 
-## ZPL
+```txt
+SKU
+Part number
+Value
+Package
+Stock quantity
+Location
+Manufacturer
+QR code
+```
 
-For Zebra-compatible printers, use the ZPL copy button and send raw output through your printer software or network print utility.
+## QR Content Options
+
+```txt
+SKU
+Part number
+Component detail URL
+```
+
+## Browser Print
+
+For browser print:
+
+- Disable headers/footers
+- Use scale 100%
+- Use correct paper size
+- Use no margins when supported
+
+## ZPL Support
+
+For Zebra-compatible printers, ReelManager can generate ZPL output.
+
+The user may copy ZPL and send it to the printer using vendor tools or raw print utilities.
+
+## USB / Serial Printer Discovery
+
+Browser security prevents silent USB/Serial device listing.
+
+Supported APIs:
+
+- WebUSB
+- WebSerial
+
+The user must explicitly select and authorize the device.
+
+Fallback behavior:
+
+- Browser print
+- ZPL copy
+- Manual printer selection

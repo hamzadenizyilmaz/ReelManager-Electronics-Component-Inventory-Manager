@@ -1,8 +1,8 @@
 {
-  "name": "smd-stock-manager",
-  "version": "1.0.0",
+  "name": "reelmanager-electronics-component-inventory-manager",
+  "version": "2.2.0",
   "private": true,
-  "description": "SMD Stock Manager full-stack workspace",
+  "description": "ReelManager v2.2.0 Enterprise - Electronic component inventory, BOM, datasheet, labels, backup and update management platform",
   "scripts": {
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev"

@@ -14,10 +14,10 @@ export default function Page() {
   const router = useRouter();
   const { toast } = useUI();
 
-  const scannerRef = useRef(null);
-
   const [code, setCode] = useState("");
   const [active, setActive] = useState(false);
+
+  const scannerRef = useRef(null);
 
   async function lookup(value) {
     if (!value) return;
@@ -26,7 +26,7 @@ export default function Page() {
       const data = unwrap(await endpoints.components.barcode(value));
 
       router.push(`/components/${data.id}`);
-    } catch (error) {
+    } catch (e) {
       toast(
         "Kayıt bulunamadı, yeni komponent ekranına yönlendiriliyor",
         "warning"
@@ -49,14 +49,14 @@ export default function Page() {
 
         await html5QrCode.start(
           {
-            facingMode: "environment"
+            facingMode: "environment",
           },
           {
             fps: 10,
             qrbox: {
               width: 250,
-              height: 250
-            }
+              height: 250,
+            },
           },
           (decoded) => {
             setActive(false);
@@ -67,8 +67,8 @@ export default function Page() {
         );
 
         scannerRef.current = html5QrCode;
-      } catch (error) {
-        toast(`Kamera başlatılamadı: ${error.message}`, "error");
+      } catch (e) {
+        toast("Kamera başlatılamadı: " + e.message, "error");
       }
     }
 
@@ -85,17 +85,14 @@ export default function Page() {
   return (
     <AppShell>
       <PageHeader
-        eyebrow="Reel Manager - Mobile Ready"
+        eyebrow="Mobile Ready"
         title="QR / Barkod Okuyucu"
         description="Mobil kamera ile SKU, QR veya barkod okuyup komponent detayına hızlı geç."
       />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
         <div className="page-card min-h-[420px] p-5">
-          <div
-            id="qr-reader"
-            className="overflow-hidden rounded-3xl"
-          />
+          <div id="qr-reader" className="overflow-hidden rounded-3xl" />
 
           {!active ? (
             <button
@@ -116,9 +113,7 @@ export default function Page() {
         </div>
 
         <div className="page-card p-5">
-          <h2 className="text-lg font-black">
-            Manuel Arama
-          </h2>
+          <h2 className="text-lg font-black">Manuel Arama</h2>
 
           <p className="mt-2 text-sm text-slate-500">
             Kamera yoksa veya okutma başarısızsa kodu elle gir.
@@ -127,7 +122,7 @@ export default function Page() {
           <input
             className="input mt-4"
             value={code}
-            onChange={(event) => setCode(event.target.value)}
+            onChange={(e) => setCode(e.target.value)}
             placeholder="CMP-R7K2M9QA veya barkod"
           />
 

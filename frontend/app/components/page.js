@@ -33,18 +33,18 @@ export default function ComponentsPage() {
   const columns = [
     { key: "sku", header: "SKU", render: (r) => <span className="font-mono text-xs font-bold text-brand-600 dark:text-brand-300">{r.internalSku}</span> },
     { key: "pn", header: t("partNumber"), render: (r) => <Link className="font-bold hover:text-brand-500" href={`/components/${r.id}`}>{r.manufacturerPartNumber}</Link> },
-    { key: "category", header: t("category"), render: (r) => r.category?.nameTr || r.category?.name || "-" },
+    { key: "category", header: t("category"), render: (r) => r.category?.name || r.category?.nameTr || "-" },
     { key: "value", header: t("value"), render: (r) => r.value || "-" },
     { key: "pkg", header: t("package"), render: (r) => r.packageCase || "-" },
     { key: "qty", header: t("available"), render: (r) => <span className="font-black">{formatNumber(r.quantityAvailable)}</span> },
     { key: "status", header: "Durum", render: (r) => <StatusBadge status={stockStatus(r)} /> },
-    { key: "loc", header: t("location"), render: (r) => r.storageLocation?.nameTr || r.storageLocation?.name || "-" },
+    { key: "loc", header: t("location"), render: (r) => r.storageLocation?.name || r.storageLocation?.nameTr || "-" },
     { key: "detail", header: t("details"), render: (r) => <Link className="btn-ghost px-3 py-2 text-xs" href={`/components/${r.id}`}><Eye className="h-3.5 w-3.5" />DETAY</Link> }
   ];
 
   return (
     <AppShell>
-      <PageHeader eyebrow="Reel Manager - Inventory" title={t("components")} description="SMD direnç, kondansatör, diyot, IC ve tüm elektronik komponentleri gelişmiş filtrelerle yönet." actions={<><button className="btn-ghost" onClick={bulkEnrich}><Sparkles className="h-4 w-4" />Bulk Enrich</button><button className="btn-ghost" onClick={() => downloadWithToken(endpoints.importExport.csvUrl())}><Download className="h-4 w-4" />CSV</button><button className="btn-ghost" onClick={() => downloadWithToken(endpoints.importExport.xlsxUrl())}><Download className="h-4 w-4" />Excel</button><Link className="btn-primary" href="/components/new"><Plus className="h-4 w-4" />{t("newComponent")}</Link></>} />
+      <PageHeader eyebrow="Inventory" title={t("components")} description="SMD direnç, kondansatör, diyot, IC ve tüm elektronik komponentleri gelişmiş filtrelerle yönet." actions={<><button className="btn-ghost" onClick={bulkEnrich}><Sparkles className="h-4 w-4" />Bulk Enrich</button><button className="btn-ghost" onClick={() => downloadWithToken(endpoints.importExport.csvUrl())}><Download className="h-4 w-4" />CSV</button><button className="btn-ghost" onClick={() => downloadWithToken(endpoints.importExport.xlsxUrl())}><Download className="h-4 w-4" />Excel</button><Link className="btn-primary" href="/components/new"><Plus className="h-4 w-4" />{t("newComponent")}</Link></>} />
       <div className="page-card mb-5 flex flex-col gap-3 p-4 md:flex-row md:items-center">
         <div className="relative flex-1"><Search className="pointer-events-none absolute left-4 top-3.5 h-4 w-4 text-slate-400" /><input className="input pl-11" value={q} onChange={(e) => { setPage(1); setQ(e.target.value); }} placeholder="SKU, part number, değer, paket veya barkod ara..." /></div>
         <div className="text-sm font-semibold text-slate-500">{formatNumber(meta.total)} kayıt</div>

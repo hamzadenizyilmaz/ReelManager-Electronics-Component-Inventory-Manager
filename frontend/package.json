@@ -1,6 +1,6 @@
 {
   "name": "smd-stock-manager-frontend",
-  "version": "2.1.0",
+  "version": "2.2.0-enterprise",
   "private": true,
   "description": "Enterprise frontend for SMD Stock Manager",
   "scripts": {

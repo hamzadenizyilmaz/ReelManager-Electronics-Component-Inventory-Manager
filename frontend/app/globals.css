@@ -31,14 +31,8 @@
   --brand-rgb: 122, 167, 217;
 }
 
-* {
-  box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; font-size: var(--reel-font-size, 17px); }
 body {
   min-height: 100vh;
   background: var(--bg);
@@ -47,28 +41,12 @@ body {
   letter-spacing: -0.006em;
   text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
-  font-family: var(--font-plex-sans), Arial, sans-serif;
 }
 
-::selection {
-  background: rgba(var(--brand-rgb), .22);
-}
-
-::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, .36);
-  border: 3px solid transparent;
-  background-clip: padding-box;
-  border-radius: 999px;
-}
+::selection { background: rgba(var(--brand-rgb), .22); }
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, .36); border: 3px solid transparent; background-clip: padding-box; border-radius: 999px; }
 
 @layer components {
   .glass-panel {
@@ -76,97 +54,63 @@ body {
     background: var(--panel);
     border-color: var(--border);
   }
-
   .solid-panel {
     background: var(--panel-solid);
     border-color: var(--border);
     @apply border;
   }
-
   .focus-ring {
     @apply focus:outline-none focus:ring-2 focus:ring-brand-400/50 focus:ring-offset-2 focus:ring-offset-transparent;
   }
-
   .field-label {
     @apply mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400;
   }
-
   .input {
-    @apply w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 dark:text-slate-100;
+    @apply w-full rounded-xl border px-4 py-3 text-[15px] outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 dark:text-slate-100;
     background: color-mix(in srgb, var(--panel-solid) 94%, transparent);
     border-color: var(--border);
   }
-
-  .input:hover {
-    border-color: rgba(var(--brand-rgb), .34);
-  }
-
-  .select {
-    @apply input appearance-none pr-10;
-  }
-
-  .select option,
-  .select-control option {
-    @apply bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100;
-  }
-
-  .select-shell {
-    @apply relative block;
-  }
-
+  .input:hover { border-color: rgba(var(--brand-rgb), .34); }
+  .select { @apply input appearance-none pr-10; }
+  .select option, .select-control option { @apply bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100; }
+  .select-shell { @apply relative block; }
   .select-control {
     @apply w-full appearance-none rounded-xl border px-3.5 py-2.5 pr-10 text-sm font-medium outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:text-slate-100;
     background: color-mix(in srgb, var(--panel-solid) 94%, transparent);
     border-color: var(--border);
   }
-
-  .select-control:hover {
-    border-color: rgba(var(--brand-rgb), .34);
-  }
-
+  .select-control:hover { border-color: rgba(var(--brand-rgb), .34); }
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-[15px] font-semibold transition active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-50;
   }
-
   .btn-primary {
     @apply btn bg-[#1f4e79] text-white shadow-sm hover:bg-[#193f61] dark:bg-[#7aa7d9] dark:text-slate-950 dark:hover:bg-[#98bbe2];
   }
-
   .btn-ghost {
     @apply btn border hover:bg-slate-100 dark:hover:bg-slate-800;
     border-color: var(--border);
   }
-
-  .btn-danger {
-    @apply btn bg-rose-600 text-white hover:bg-rose-500;
-  }
-
+  .btn-danger { @apply btn bg-rose-600 text-white hover:bg-rose-500; }
   .chip {
     @apply inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold;
     border-color: var(--border);
   }
-
-  .page-card {
-    @apply glass-panel rounded-2xl shadow-soft;
-  }
-
-  .section-title {
-    @apply text-base font-semibold tracking-tight text-slate-950 dark:text-slate-50;
-  }
-
-  .section-description {
-    @apply mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400;
-  }
-
+  .page-card { @apply glass-panel rounded-2xl shadow-soft; }
+  .section-title { @apply text-base font-semibold tracking-tight text-slate-950 dark:text-slate-50; }
+  .section-description { @apply mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400; }
   .settings-tab {
     @apply flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition;
   }
-
-  .settings-tab-active {
-    @apply bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950;
-  }
-
-  .settings-tab-passive {
-    @apply text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-100;
-  }
+  .settings-tab-active { @apply bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950; }
+  .settings-tab-passive { @apply text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-slate-100; }
 }
+
+
+html[data-density="compact"] .page-card { @apply rounded-xl; }
+html[data-density="compact"] .input { @apply px-3 py-2 text-sm; }
+html[data-density="compact"] .btn { @apply px-3 py-2 text-sm; }
+html[data-density="spacious"] .page-card { @apply rounded-3xl; }
+html[data-density="spacious"] .input { @apply px-5 py-4 text-base; }
+html[data-density="spacious"] .btn { @apply px-5 py-4 text-base; }
+html[data-panel="minimal"] .page-card { box-shadow: none; }
+html[data-panel="technical"] .page-card { border-style: dashed; }

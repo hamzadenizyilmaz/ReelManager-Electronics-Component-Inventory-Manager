@@ -1,58 +1,156 @@
 # Architecture
 
-ReelManager is a two-part full-stack application.
+## Overview
+
+ReelManager is a full-stack web application designed for managing electronic component inventory. The system is separated into a backend API, a frontend dashboard and a MySQL database managed through Prisma ORM.
+
+The platform focuses on practical engineering workflows:
+
+- Component registration
+- Stock tracking
+- Project/BOM management
+- Datasheet enrichment
+- Label printing
+- Purchase link generation
+- Activity logging
+- Backup and update management
+
+## High-Level Architecture
+
+```txt
+User Browser
+   |
+   | HTTPS
+   v
+Nginx Reverse Proxy
+   |
+   | / frontend
+   v
+Next.js Frontend
+   |
+   | /api requests with JWT
+   v
+Node.js Express Backend
+   |
+   | Prisma Client
+   v
+MySQL / MariaDB Database
+```
 
 ## Frontend
 
-The frontend is built with Next.js App Router and JavaScript. It uses a SaaS-style application shell with protected routes, a central API client, responsive UI components and TR/EN language support.
+The frontend is built with Next.js 15 and Tailwind CSS. It provides a responsive, dark-mode-ready enterprise dashboard.
 
-Key layers:
+Main responsibilities:
 
-- `app/`: routes and page-level screens
-- `components/layout/`: sidebar, topbar and application shell
-- `components/ui/`: reusable UI primitives
-- `components/forms/`: reusable CRUD/resource forms
-- `components/tables/`: table abstractions
-- `components/labels/`: label printing studio
-- `components/providers/`: theme, language and toast provider
-- `lib/api.js`: central API client
-- `lib/token.js`: token, cookie and session helpers
-- `store/`: Zustand stores
-- `middleware.js`: frontend route guard
+- Authentication UI
+- Protected route handling
+- Dashboard charts and summary cards
+- Component CRUD screens
+- Project and BOM screens
+- Settings center
+- Activity logs
+- Updates page
+- Backup/restore UI
+- Label printing UI
+
+Important folders:
+
+```txt
+frontend/app/
+frontend/components/
+frontend/lib/
+frontend/store/
+frontend/public/
+```
 
 ## Backend
 
-The backend is a modular Express.js API powered by Prisma and MySQL.
+The backend is built with Express.js and Prisma.
 
-Key layers:
+Main responsibilities:
 
-- `src/app.js`: Express application
-- `src/server.js`: server bootstrap
-- `src/config/`: environment and database config
-- `src/middlewares/`: auth, role, validation and error handling
-- `src/modules/`: business modules
-- `src/utils/`: shared helpers
-- `prisma/schema.prisma`: database schema
-- `prisma/seed.js`: seed script
+- REST API
+- Authentication and JWT validation
+- Component CRUD
+- Stock movement logic
+- BOM/project operations
+- Datasheet enrichment provider chain
+- Export/import handlers
+- Backup and update services
+- Detailed audit logging
 
-## Data Flow
+Important folders:
 
-1. User signs in through `/api/auth/login`.
-2. Backend returns JWT and user object.
-3. Frontend stores JWT in localStorage and SameSite cookie.
-4. Frontend middleware protects route navigation.
-5. Axios interceptor adds `Authorization: Bearer TOKEN` to API calls.
-6. Backend auth middleware verifies JWT.
-7. Authorized module route handles the request.
-8. Standard API response is returned.
+```txt
+backend/src/modules/
+backend/src/middlewares/
+backend/src/utils/
+backend/prisma/
+backend/docs/
+```
+
+## Database
+
+The database is MySQL or MariaDB. Prisma manages schema definitions and migrations.
+
+Core data groups:
+
+- Users
+- Components
+- Categories
+- Suppliers
+- Locations
+- Stock movements
+- Projects
+- BOM items
+- Enrichment cache
+- System settings
+- Activity logs
+
+## Authentication Flow
+
+1. User enters email and password.
+2. Frontend calls `POST /api/auth/login`.
+3. Backend validates credentials.
+4. Backend returns JWT token.
+5. Frontend stores token.
+6. API requests include `Authorization: Bearer <token>`.
+7. Backend validates JWT in protected routes.
 
 ## Datasheet Enrichment Flow
 
-1. User enters an MPN or supplier part number.
-2. System checks local database.
-3. System checks cache.
-4. Provider chain runs: Nexar, DigiKey, Mouser.
-5. Local parser fallback estimates key fields.
-6. Normalized results are returned to frontend.
-7. User selects a result and fills the component form.
-8. Result is cached to avoid repeated provider calls.
+Provider order:
+
+1. Local database
+2. Nexar / Octopart
+3. DigiKey
+4. Mouser
+5. Local parser fallback
+6. Manual datasheet URL
+
+The backend normalizes all provider responses into one frontend-safe format.
+
+## Update Flow
+
+1. User opens `/updates`.
+2. Backend checks GitHub release information.
+3. If versions match, update is blocked.
+4. If newer version exists and updates are allowed, backup starts.
+5. Project files and SQL database are backed up.
+6. Update command executes only when `ALLOW_SYSTEM_UPDATE=true`.
+
+## Backup Flow
+
+Supported export formats:
+
+- JSON
+- SQL
+
+Backup can be downloaded locally or prepared for remote transfer through FTP/SFTP configuration.
+
+## Security Boundaries
+
+Frontend route protection improves user experience but is not the only security layer. Backend authentication and authorization must remain mandatory for protected operations.
+
+Critical pages such as settings, backup, updates and users should be restricted to administrator roles.

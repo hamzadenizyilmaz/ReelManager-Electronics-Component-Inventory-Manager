@@ -4,7 +4,6 @@ This release prepares ReelManager for GitHub publication as a professional elect
 
 ## Key Improvements
 
-- GitHub-ready repository structure
 - Enterprise sidebar with repository link and version badges
 - Robust frontend auth/session handling
 - Protected route middleware

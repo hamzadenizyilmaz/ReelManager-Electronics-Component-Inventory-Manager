@@ -192,7 +192,7 @@ export default function NewComponentPage() {
   return (
     <AppShell>
       <PageHeader
-        eyebrow="Reel Manager - Inventory Wizard"
+        eyebrow="Inventory Wizard"
         title="Yeni Komponent"
         description="Parça kodu gir, Nexar/Octopart, DigiKey, Mouser ve local parser zinciriyle teknik bilgileri otomatik doldur."
       />
@@ -210,14 +210,14 @@ export default function NewComponentPage() {
                 value={form.category_id}
                 onChange={(value) => setForm({ ...form, category_id: value })}
                 placeholder="Kategori seç"
-                options={categories.map((x) => ({ value: x.id, label: x.nameTr || x.nameEn || x.name }))}
+                options={categories.map((x) => ({ value: x.id, label: x.name || x.nameTr || x.nameEn }))}
               />
               <SelectField
                 label="Tedarikçi"
                 value={form.supplier_id}
                 onChange={(value) => setForm({ ...form, supplier_id: value })}
                 placeholder="Tedarikçi seç"
-                options={suppliers.map((x) => ({ value: x.id, label: x.nameTr || x.nameEn || x.name }))}
+                options={suppliers.map((x) => ({ value: x.id, label: x.name || x.nameTr || x.nameEn }))}
               />
             </div>
           </section>
@@ -250,7 +250,7 @@ export default function NewComponentPage() {
                 value={form.storage_location_id}
                 onChange={(value) => setForm({ ...form, storage_location_id: value })}
                 placeholder="Lokasyon seç"
-                options={locations.map((x) => ({ value: x.id, label: x.nameTr || x.nameEn || x.name }))}
+                options={locations.map((x) => ({ value: x.id, label: x.name || x.nameTr || x.nameEn }))}
               />
               {input("barcode", "Barkod / QR")}
               {input("product_url", "Ürün URL")}
@@ -299,6 +299,18 @@ export default function NewComponentPage() {
               </div>
             </div>
           ) : null}
+
+          <div className="page-card p-5">
+            <h3 className="text-lg font-semibold">Datasheet Sırası</h3>
+            <ol className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+              <li>1. Local database</li>
+              <li>2. Nexar / Octopart API</li>
+              <li>3. DigiKey API</li>
+              <li>4. Mouser API</li>
+              <li>5. Local parser fallback</li>
+              <li>6. Manuel datasheet URL</li>
+            </ol>
+          </div>
 
           <div className="page-card p-5">
             <button disabled={saving} className="btn-primary w-full"><Save className="h-4 w-4" />{saving ? "Kaydediliyor..." : "Komponenti Kaydet"}</button>

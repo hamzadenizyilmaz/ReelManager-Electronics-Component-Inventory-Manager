@@ -11,5 +11,7 @@ router.put("/system", validate(systemSettingsSchema), c.updateSystem);
 router.get("/users", c.listUsers);
 router.post("/users", validate(userCreateSchema), c.createUser);
 router.put("/users/:id", validate(userUpdateSchema), c.updateUser);
+router.get("/backup/export", c.exportBackup);
+router.post("/backup/test", c.testBackupTarget);
 
 module.exports = router;

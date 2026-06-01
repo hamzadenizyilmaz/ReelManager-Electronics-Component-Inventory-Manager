@@ -2,7 +2,7 @@ const swaggerSpec = {
   openapi: "3.0.3",
   info: {
     title: "SMD Stock Manager API",
-    version: "1.0.0",
+    version: "2.2.0-Enterprise",
     description: "SMD Stock Manager / Component Inventory Manager backend API documentation."
   },
   servers: [

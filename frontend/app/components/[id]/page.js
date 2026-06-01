@@ -4,13 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
-  ChevronDown,
-  Edit3,
+  ExternalLink,
   FileText,
   PackageCheck,
   Save,
+  Search,
   Sparkles,
-  X
 } from "lucide-react";
 
 import AppShell from "../../../components/layout/AppShell";
@@ -20,265 +19,111 @@ import DataTable from "../../../components/tables/DataTable";
 import LabelPrintPanel from "../../../components/labels/LabelPrintPanel";
 
 import { apiError, endpoints, unwrap } from "../../../lib/api";
+import { formatDate, formatNumber, stockStatus } from "../../../lib/formatters";
 import {
-  formatDate,
-  formatNumber,
-  stockStatus
-} from "../../../lib/formatters";
-import { useUI } from "../../../components/providers/Providers";
+  buildPurchaseLinks,
+  buildPurchaseQuery,
+} from "../../../lib/purchase-link";
 
-const emptyEditForm = {
-  manufacturerPartNumber: "",
-  internalSku: "",
-  name: "",
-  description: "",
-  value: "",
-  tolerance: "",
-  powerRating: "",
-  voltageRating: "",
-  packageCase: "",
-  manufacturer: "",
-  datasheetUrl: "",
-  productUrl: "",
-  minimumStock: "",
-  reorderQuantity: "",
-  categoryId: "",
-  supplierId: "",
-  storageLocationId: ""
-};
+import { useUI } from "../../../components/providers/Providers";
 
 export default function ComponentDetailPage() {
   const { id } = useParams();
   const { toast } = useUI();
 
   const [item, setItem] = useState(null);
-  const [datasheet, setDatasheet] = useState(null);
-
-  const [categories, setCategories] = useState([]);
-  const [suppliers, setSuppliers] = useState([]);
-  const [locations, setLocations] = useState([]);
-
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [editing, setEditing] = useState(false);
-
-  const [editForm, setEditForm] = useState(emptyEditForm);
-
   const [movement, setMovement] = useState({
     quantity: 1,
     reason: "Manual",
-    notes: ""
+    notes: "",
   });
+
+  const [loading, setLoading] = useState(true);
+  const [datasheet, setDatasheet] = useState(null);
+  const [fallbackLinks, setFallbackLinks] = useState([]);
+  const [autoSearching, setAutoSearching] = useState(false);
 
   async function load() {
     setLoading(true);
 
     try {
-      const [
-        componentResponse,
-        categoriesResponse,
-        suppliersResponse,
-        locationsResponse,
-        datasheetResponse
-      ] = await Promise.allSettled([
-        endpoints.components.get(id),
-        endpoints.categories.list(),
-        endpoints.suppliers.list(),
-        endpoints.locations.list(),
-        endpoints.components.datasheet(id)
-      ]);
+      const comp = unwrap(await endpoints.components.get(id));
 
-      if (componentResponse.status === "fulfilled") {
-        const componentData = unwrap(componentResponse.value);
+      setItem(comp);
 
-        setItem(componentData);
-        fillEditForm(componentData);
-      } else {
-        toast(apiError(componentResponse.reason), "error");
-      }
+      const links = buildPurchaseLinks(comp || {});
+      setFallbackLinks(links);
 
-      if (categoriesResponse.status === "fulfilled") {
-        setCategories(normalizeList(unwrap(categoriesResponse.value)));
-      }
-
-      if (suppliersResponse.status === "fulfilled") {
-        setSuppliers(normalizeList(unwrap(suppliersResponse.value)));
-      }
-
-      if (locationsResponse.status === "fulfilled") {
-        setLocations(normalizeList(unwrap(locationsResponse.value)));
-      }
-
-      if (datasheetResponse.status === "fulfilled") {
-        setDatasheet(unwrap(datasheetResponse.value));
-      } else {
+      try {
+        const ds = unwrap(await endpoints.components.datasheet(id));
+        setDatasheet(ds);
+      } catch {
         setDatasheet(null);
       }
-    } catch (error) {
-      toast(apiError(error), "error");
+    } catch (e) {
+      toast(apiError(e), "error");
     } finally {
       setLoading(false);
     }
   }
 
-  function normalizeList(data) {
-    if (Array.isArray(data)) return data;
-    if (Array.isArray(data?.items)) return data.items;
-    if (Array.isArray(data?.rows)) return data.rows;
-    if (Array.isArray(data?.data)) return data.data;
-    return [];
-  }
-
-  function fillEditForm(component) {
-    setEditForm({
-      manufacturerPartNumber: component?.manufacturerPartNumber || "",
-      internalSku: component?.internalSku || "",
-      name: component?.name || "",
-      description: component?.description || "",
-      value: component?.value || "",
-      tolerance: component?.tolerance || "",
-      powerRating: component?.powerRating || "",
-      voltageRating: component?.voltageRating || "",
-      packageCase: component?.packageCase || "",
-      manufacturer: component?.manufacturer || "",
-      datasheetUrl: component?.datasheetUrl || "",
-      productUrl: component?.productUrl || "",
-      minimumStock: component?.minimumStock ?? "",
-      reorderQuantity: component?.reorderQuantity ?? "",
-      categoryId: component?.categoryId || component?.category?.id || "",
-      supplierId: component?.supplierId || component?.supplier?.id || "",
-      storageLocationId:
-        component?.storageLocationId ||
-        component?.storageLocation?.id ||
-        component?.locationId ||
-        component?.location?.id ||
-        ""
-    });
-  }
-
   useEffect(() => {
-    if (id) {
-      load();
-    }
+    load();
   }, [id]);
 
-  function updateEditForm(field, value) {
-    setEditForm((prev) => ({
-      ...prev,
-      [field]: value
-    }));
-  }
-
-  function cleanString(value) {
-    if (value === "" || value === null || value === undefined) {
-      return undefined;
+  useEffect(() => {
+    if (item && !item.datasheetUrl && !datasheet?.url) {
+      autoFindDatasheet(false);
     }
+  }, [item?.id]);
 
-    return String(value).trim();
-  }
+  async function autoFindDatasheet(showToast = true) {
+    if (!item) return;
 
-  function toNumberOrUndefined(value) {
-    if (value === "" || value === null || value === undefined) {
-      return undefined;
-    }
-
-    const numberValue = Number(value);
-
-    return Number.isNaN(numberValue) ? undefined : numberValue;
-  }
-
-  function toIdOrUndefined(value) {
-    if (value === "" || value === null || value === undefined) {
-      return undefined;
-    }
-
-    const numberValue = Number(value);
-
-    return Number.isNaN(numberValue) ? undefined : numberValue;
-  }
-
-  function removeUndefined(payload) {
-    const cleaned = { ...payload };
-
-    Object.keys(cleaned).forEach((key) => {
-      if (cleaned[key] === undefined) {
-        delete cleaned[key];
-      }
-    });
-
-    return cleaned;
-  }
-
-  function buildCamelPayload() {
-    return removeUndefined({
-      manufacturerPartNumber: cleanString(editForm.manufacturerPartNumber),
-      internalSku: cleanString(editForm.internalSku),
-      name: cleanString(editForm.name),
-      description: cleanString(editForm.description),
-      value: cleanString(editForm.value),
-      tolerance: cleanString(editForm.tolerance),
-      powerRating: cleanString(editForm.powerRating),
-      voltageRating: cleanString(editForm.voltageRating),
-      packageCase: cleanString(editForm.packageCase),
-      manufacturer: cleanString(editForm.manufacturer),
-      datasheetUrl: cleanString(editForm.datasheetUrl),
-      productUrl: cleanString(editForm.productUrl),
-      minimumStock: toNumberOrUndefined(editForm.minimumStock),
-      reorderQuantity: toNumberOrUndefined(editForm.reorderQuantity),
-      categoryId: toIdOrUndefined(editForm.categoryId),
-      supplierId: toIdOrUndefined(editForm.supplierId),
-      storageLocationId: toIdOrUndefined(editForm.storageLocationId)
-    });
-  }
-
-  function buildSnakePayload() {
-    return removeUndefined({
-      manufacturer_part_number: cleanString(editForm.manufacturerPartNumber),
-      internal_sku: cleanString(editForm.internalSku),
-      name: cleanString(editForm.name),
-      description: cleanString(editForm.description),
-      value: cleanString(editForm.value),
-      tolerance: cleanString(editForm.tolerance),
-      power_rating: cleanString(editForm.powerRating),
-      voltage_rating: cleanString(editForm.voltageRating),
-      package_case: cleanString(editForm.packageCase),
-      manufacturer: cleanString(editForm.manufacturer),
-      datasheet_url: cleanString(editForm.datasheetUrl),
-      product_url: cleanString(editForm.productUrl),
-      minimum_stock: toNumberOrUndefined(editForm.minimumStock),
-      reorder_quantity: toNumberOrUndefined(editForm.reorderQuantity),
-      category_id: toIdOrUndefined(editForm.categoryId),
-      supplier_id: toIdOrUndefined(editForm.supplierId),
-      storage_location_id: toIdOrUndefined(editForm.storageLocationId)
-    });
-  }
-
-  async function saveComponent(event) {
-    event.preventDefault();
-
-    setSaving(true);
+    setAutoSearching(true);
 
     try {
-      const camelPayload = buildCamelPayload();
+      const mpn =
+        item.manufacturerPartNumber ||
+        item.supplierPartNumber ||
+        item.name ||
+        buildPurchaseQuery(item);
 
-      try {
-        await endpoints.components.update(id, camelPayload);
-      } catch (error) {
-        if (error?.response?.status !== 422) {
-          throw error;
+      const result = unwrap(
+        await endpoints.datasheets.enrich(mpn, {
+          manualUrl: item.datasheetUrl || "",
+        })
+      );
+
+      const best =
+        result?.best ||
+        result?.enrichment?.best ||
+        result?.items?.[0] ||
+        result;
+
+      if (best?.datasheetUrl || best?.datasheet_url || best?.url) {
+        setDatasheet({
+          url: best.datasheetUrl || best.datasheet_url || best.url,
+          provider: {
+            name: best.source || "Auto Enrichment",
+          },
+        });
+
+        if (showToast) {
+          toast("Datasheet kaynağı bulundu", "success");
         }
-
-        await endpoints.components.update(id, buildSnakePayload());
+      } else if (showToast) {
+        toast(
+          "Datasheet bulunamadı, satın alma arama linkleri hazırlandı",
+          "info"
+        );
       }
-
-      toast("Komponent bilgileri güncellendi", "success");
-
-      setEditing(false);
-      load();
-    } catch (error) {
-      toast(apiError(error), "error");
+    } catch (e) {
+      if (showToast) {
+        toast(apiError(e, "Datasheet aranamadı"), "error");
+      }
     } finally {
-      setSaving(false);
+      setAutoSearching(false);
     }
   }
 
@@ -286,7 +131,7 @@ export default function ComponentDetailPage() {
     try {
       const result = unwrap(
         await endpoints.components.enrich(id, {
-          force: false
+          force: false,
         })
       );
 
@@ -307,7 +152,7 @@ export default function ComponentDetailPage() {
     try {
       const payload = {
         ...movement,
-        quantity: Number(movement.quantity)
+        quantity: Number(movement.quantity),
       };
 
       if (type === "in") {
@@ -327,10 +172,9 @@ export default function ComponentDetailPage() {
       }
 
       toast("Stok işlemi tamamlandı", "success");
-
       load();
-    } catch (error) {
-      toast(apiError(error), "error");
+    } catch (e) {
+      toast(apiError(e), "error");
     }
   }
 
@@ -340,33 +184,35 @@ export default function ComponentDetailPage() {
     {
       key: "type",
       header: "Tip",
-      render: (row) => <span className="chip">{row.movementType}</span>
+      render: (r) => <span className="chip">{r.movementType}</span>,
     },
     {
       key: "quantity",
-      header: "Adet"
+      header: "Adet",
     },
     {
       key: "before",
       header: "Önce",
-      render: (row) => row.quantityBefore
+      render: (r) => r.quantityBefore,
     },
     {
       key: "after",
       header: "Sonra",
-      render: (row) => row.quantityAfter
+      render: (r) => r.quantityAfter,
     },
     {
       key: "date",
       header: "Tarih",
-      render: (row) => formatDate(row.createdAt)
-    }
+      render: (r) => formatDate(r.createdAt),
+    },
   ];
+
+  const bestDatasource = datasheet?.url || item?.datasheetUrl;
 
   return (
     <AppShell>
       <PageHeader
-        eyebrow="Reel Manager - Component Detail"
+        eyebrow="Component Detail"
         title={item?.manufacturerPartNumber || "Komponent"}
         description={
           item?.description ||
@@ -380,28 +226,9 @@ export default function ComponentDetailPage() {
               Enrich
             </button>
 
-            <button
-              className={editing ? "btn-ghost" : "btn-primary"}
-              onClick={() => {
-                if (editing) {
-                  fillEditForm(item);
-                }
-
-                setEditing((value) => !value);
-              }}
-            >
-              {editing ? (
-                <>
-                  <X className="h-4 w-4" />
-                  İptal
-                </>
-              ) : (
-                <>
-                  <Edit3 className="h-4 w-4" />
-                  Düzenle
-                </>
-              )}
-            </button>
+            <Link className="btn-ghost" href={`/components/${id}/edit`}>
+              Düzenle
+            </Link>
 
             <Link className="btn-ghost" href="/components">
               Listeye Dön
@@ -417,12 +244,7 @@ export default function ComponentDetailPage() {
 
             <Info
               label="Kategori"
-              value={
-                item?.category?.nameTr ||
-                item?.category?.name_tr ||
-                item?.category?.name ||
-                "-"
-              }
+              value={item?.category?.name || item?.category?.nameTr}
             />
 
             <Info label="Paket" value={item?.packageCase} />
@@ -433,230 +255,68 @@ export default function ComponentDetailPage() {
             />
           </div>
 
-          {editing ? (
-            <form onSubmit={saveComponent} className="page-card p-5">
-              <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <h2 className="text-lg font-black">
-                    Komponent Bilgilerini Düzenle
-                  </h2>
+          <div className="page-card p-5">
+            <h2 className="mb-4 text-lg font-semibold">Teknik Bilgiler</h2>
 
-                  <p className="mt-1 text-sm text-slate-500">
-                    Ürün, teknik bilgi, kategori, tedarikçi ve lokasyon
-                    alanlarını buradan güncelle.
-                  </p>
-                </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              <Info label="Değer" value={item?.value} />
+              <Info label="Tolerans" value={item?.tolerance} />
+              <Info label="Güç" value={item?.powerRating} />
+              <Info label="Voltaj" value={item?.voltageRating} />
+              <Info label="Üretici" value={item?.manufacturer} />
 
-                <button className="btn-primary" disabled={saving} type="submit">
-                  <Save className="h-4 w-4" />
-                  {saving ? "Kaydediliyor..." : "Kaydet"}
-                </button>
-              </div>
+              <Info
+                label="Tedarikçi"
+                value={item?.supplier?.name || item?.supplier?.nameTr}
+              />
 
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <Field
-                  label="Part Number"
-                  value={editForm.manufacturerPartNumber}
-                  onChange={(value) =>
-                    updateEditForm("manufacturerPartNumber", value)
-                  }
-                />
+              <Info
+                label="Lokasyon"
+                value={
+                  item?.storageLocation?.name || item?.storageLocation?.nameTr
+                }
+              />
 
-                <Field
-                  label="SKU"
-                  value={editForm.internalSku}
-                  onChange={(value) => updateEditForm("internalSku", value)}
-                />
+              <Info
+                label="Datasheet"
+                value={
+                  bestDatasource ? (
+                    <a
+                      className="text-brand-500"
+                      href={bestDatasource}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Aç
+                    </a>
+                  ) : (
+                    "Aranıyor / bulunamadı"
+                  )
+                }
+              />
 
-                <Field
-                  label="Ad"
-                  value={editForm.name}
-                  onChange={(value) => updateEditForm("name", value)}
-                />
-
-                <Field
-                  label="Değer"
-                  value={editForm.value}
-                  onChange={(value) => updateEditForm("value", value)}
-                />
-
-                <Field
-                  label="Paket / Kılıf"
-                  value={editForm.packageCase}
-                  onChange={(value) => updateEditForm("packageCase", value)}
-                />
-
-                <Field
-                  label="Üretici"
-                  value={editForm.manufacturer}
-                  onChange={(value) => updateEditForm("manufacturer", value)}
-                />
-
-                <Field
-                  label="Tolerans"
-                  value={editForm.tolerance}
-                  onChange={(value) => updateEditForm("tolerance", value)}
-                />
-
-                <Field
-                  label="Güç"
-                  value={editForm.powerRating}
-                  onChange={(value) => updateEditForm("powerRating", value)}
-                />
-
-                <Field
-                  label="Voltaj"
-                  value={editForm.voltageRating}
-                  onChange={(value) => updateEditForm("voltageRating", value)}
-                />
-
-                <Field
-                  label="Minimum Stok"
-                  type="number"
-                  value={editForm.minimumStock}
-                  onChange={(value) => updateEditForm("minimumStock", value)}
-                />
-
-                <Field
-                  label="Tekrar Sipariş"
-                  type="number"
-                  value={editForm.reorderQuantity}
-                  onChange={(value) => updateEditForm("reorderQuantity", value)}
-                />
-
-                <ListBoxField
-                  label="Kategori"
-                  value={editForm.categoryId}
-                  onChange={(value) => updateEditForm("categoryId", value)}
-                  options={categories}
-                  placeholder="Kategori seç"
-                />
-
-                <ListBoxField
-                  label="Tedarikçi"
-                  value={editForm.supplierId}
-                  onChange={(value) => updateEditForm("supplierId", value)}
-                  options={suppliers}
-                  placeholder="Tedarikçi seç"
-                />
-
-                <ListBoxField
-                  label="Lokasyon"
-                  value={editForm.storageLocationId}
-                  onChange={(value) =>
-                    updateEditForm("storageLocationId", value)
-                  }
-                  options={locations}
-                  placeholder="Lokasyon seç"
-                />
-
-                <Field
-                  label="Datasheet URL"
-                  value={editForm.datasheetUrl}
-                  onChange={(value) => updateEditForm("datasheetUrl", value)}
-                />
-
-                <Field
-                  label="Ürün URL"
-                  value={editForm.productUrl}
-                  onChange={(value) => updateEditForm("productUrl", value)}
-                />
-              </div>
-
-              <div className="mt-4">
-                <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
-                  Açıklama
-                </label>
-
-                <textarea
-                  className="input min-h-28"
-                  value={editForm.description}
-                  onChange={(event) =>
-                    updateEditForm("description", event.target.value)
-                  }
-                  placeholder="Komponent açıklaması"
-                />
-              </div>
-            </form>
-          ) : (
-            <div className="page-card p-5">
-              <h2 className="mb-4 text-lg font-black">
-                Teknik Bilgiler
-              </h2>
-
-              <div className="grid gap-4 md:grid-cols-3">
-                <Info label="Değer" value={item?.value} />
-                <Info label="Tolerans" value={item?.tolerance} />
-                <Info label="Güç" value={item?.powerRating} />
-                <Info label="Voltaj" value={item?.voltageRating} />
-                <Info label="Üretici" value={item?.manufacturer} />
-
-                <Info
-                  label="Tedarikçi"
-                  value={
-                    item?.supplier?.nameTr ||
-                    item?.supplier?.name_tr ||
-                    item?.supplier?.name ||
-                    "-"
-                  }
-                />
-
-                <Info
-                  label="Lokasyon"
-                  value={
-                    item?.storageLocation?.nameTr ||
-                    item?.storageLocation?.name_tr ||
-                    item?.storageLocation?.name ||
-                    item?.location?.nameTr ||
-                    item?.location?.name_tr ||
-                    item?.location?.name ||
-                    "-"
-                  }
-                />
-
-                <Info
-                  label="Datasheet"
-                  value={
-                    item?.datasheetUrl ? (
-                      <a
-                        className="text-brand-500"
-                        href={item.datasheetUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Aç
-                      </a>
-                    ) : (
-                      "-"
-                    )
-                  }
-                />
-
-                <Info
-                  label="Ürün URL"
-                  value={
-                    item?.productUrl ? (
-                      <a
-                        className="text-brand-500"
-                        href={item.productUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Aç
-                      </a>
-                    ) : (
-                      "-"
-                    )
-                  }
-                />
-              </div>
+              <Info
+                label="Ürün URL"
+                value={
+                  item?.productUrl ? (
+                    <a
+                      className="text-brand-500"
+                      href={item.productUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Aç
+                    </a>
+                  ) : (
+                    "Otomatik linkler sağda"
+                  )
+                }
+              />
             </div>
-          )}
+          </div>
 
           <div>
-            <h2 className="mb-3 text-lg font-black">
-              Stok Hareketleri
-            </h2>
+            <h2 className="mb-3 text-lg font-semibold">Stok Hareketleri</h2>
 
             <DataTable
               columns={columns}
@@ -668,7 +328,7 @@ export default function ComponentDetailPage() {
 
         <aside className="space-y-6">
           <div className="page-card p-5">
-            <h2 className="mb-4 flex items-center gap-2 text-lg font-black">
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
               <PackageCheck className="h-5 w-5 text-brand-500" />
               Stok Durumu
             </h2>
@@ -691,10 +351,10 @@ export default function ComponentDetailPage() {
                 type="number"
                 min="1"
                 value={movement.quantity}
-                onChange={(event) =>
+                onChange={(e) =>
                   setMovement({
                     ...movement,
-                    quantity: event.target.value
+                    quantity: e.target.value,
                   })
                 }
               />
@@ -702,10 +362,10 @@ export default function ComponentDetailPage() {
               <input
                 className="input"
                 value={movement.reason}
-                onChange={(event) =>
+                onChange={(e) =>
                   setMovement({
                     ...movement,
-                    reason: event.target.value
+                    reason: e.target.value,
                   })
                 }
                 placeholder="Sebep"
@@ -714,10 +374,10 @@ export default function ComponentDetailPage() {
               <textarea
                 className="input min-h-20"
                 value={movement.notes}
-                onChange={(event) =>
+                onChange={(e) =>
                   setMovement({
                     ...movement,
-                    notes: event.target.value
+                    notes: e.target.value,
                   })
                 }
                 placeholder="Not"
@@ -745,29 +405,61 @@ export default function ComponentDetailPage() {
           </div>
 
           <div className="page-card p-5">
-            <h2 className="mb-4 flex items-center gap-2 text-lg font-black">
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
               <FileText className="h-5 w-5 text-brand-500" />
               Datasheet
             </h2>
 
-            <div className="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+            <div className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
               <div>
                 Aktif kaynak:{" "}
                 <span className="font-bold">
-                  {datasheet?.provider?.name || "-"}
+                  {datasheet?.provider?.name ||
+                    (item?.datasheetUrl ? "Manual URL" : "Otomatik arama")}
                 </span>
               </div>
 
-              {datasheet?.url ? (
+              {bestDatasource ? (
                 <a
-                  className="btn-ghost mt-3 w-full"
-                  href={datasheet.url}
+                  className="btn-ghost w-full"
+                  href={bestDatasource}
                   target="_blank"
                   rel="noreferrer"
                 >
                   Datasheet Aç
                 </a>
-              ) : null}
+              ) : (
+                <button
+                  className="btn-primary w-full"
+                  onClick={() => autoFindDatasheet(true)}
+                  disabled={autoSearching}
+                >
+                  <Search className="h-4 w-4" />
+                  {autoSearching ? "Aranıyor..." : "Datasheet Bul"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="page-card p-5">
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
+              <ExternalLink className="h-5 w-5 text-brand-500" />
+              Satın Alma / Arama
+            </h2>
+
+            <div className="space-y-3">
+              {fallbackLinks.slice(0, 6).map((l) => (
+                <a
+                  key={l.label}
+                  className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-3 text-sm font-semibold hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900"
+                  href={l.url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <span>{l.label}</span>
+                  <ExternalLink className="h-4 w-4 text-slate-400" />
+                </a>
+              ))}
             </div>
           </div>
 
@@ -778,140 +470,14 @@ export default function ComponentDetailPage() {
   );
 }
 
-function Field({ label, value, onChange, type = "text" }) {
-  return (
-    <label className="block">
-      <span className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
-        {label}
-      </span>
-
-      <input
-        className="input"
-        type={type}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      />
-    </label>
-  );
-}
-
-function ListBoxField({
-  label,
-  value,
-  onChange,
-  options = [],
-  placeholder = "Seç"
-}) {
-  const [open, setOpen] = useState(false);
-
-  const selected = options.find(
-    (option) => String(option.id) === String(value)
-  );
-
-  return (
-    <div className="relative">
-      <span className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
-        {label}
-      </span>
-
-      <button
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-        className="flex h-11 w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-4 text-left text-sm font-semibold text-slate-900 outline-none transition hover:border-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:hover:border-slate-500"
-      >
-        <span className={selected ? "" : "text-slate-500"}>
-          {selected ? getOptionLabel(selected) : placeholder}
-        </span>
-
-        <ChevronDown
-          className={`h-4 w-4 text-slate-400 transition ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      {open ? (
-        <>
-          <button
-            type="button"
-            aria-label="Dropdown kapat"
-            className="fixed inset-0 z-40 cursor-default"
-            onClick={() => setOpen(false)}
-          />
-
-          <div className="absolute z-50 mt-2 max-h-64 w-full overflow-auto rounded-2xl border border-slate-200 bg-white p-1 shadow-2xl shadow-black/20 dark:border-slate-700 dark:bg-slate-950 dark:shadow-black/40">
-            <button
-              type="button"
-              onClick={() => {
-                onChange("");
-                setOpen(false);
-              }}
-              className="flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
-            >
-              {placeholder}
-            </button>
-
-            {options.length ? (
-              options.map((option) => {
-                const active = String(option.id) === String(value);
-
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => {
-                      onChange(String(option.id));
-                      setOpen(false);
-                    }}
-                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${
-                      active
-                        ? "bg-brand-500 text-white"
-                        : "text-slate-700 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white"
-                    }`}
-                  >
-                    <span>{getOptionLabel(option)}</span>
-
-                    {active ? (
-                      <span className="text-xs font-black">
-                        ✓
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })
-            ) : (
-              <div className="px-3 py-3 text-sm text-slate-500">
-                Kayıt bulunamadı
-              </div>
-            )}
-          </div>
-        </>
-      ) : null}
-    </div>
-  );
-}
-
-function getOptionLabel(option) {
-  return (
-    option?.nameTr ||
-    option?.name_tr ||
-    option?.name ||
-    option?.nameEn ||
-    option?.name_en ||
-    option?.code ||
-    option?.slug ||
-    `#${option?.id}`
-  );
-}
-
 function Info({ label, value }) {
   return (
     <div>
-      <div className="text-xs font-black uppercase tracking-wider text-slate-500">
+      <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
         {label}
       </div>
 
-      <div className="mt-1 font-bold text-slate-900 dark:text-white">
+      <div className="mt-1 font-semibold text-slate-900 dark:text-white">
         {value || "-"}
       </div>
     </div>
@@ -921,13 +487,8 @@ function Info({ label, value }) {
 function Mini({ label, value }) {
   return (
     <div className="rounded-2xl bg-slate-100 p-3 dark:bg-slate-900">
-      <div className="text-xs text-slate-500">
-        {label}
-      </div>
-
-      <div className="text-xl font-black">
-        {value}
-      </div>
+      <div className="text-xs text-slate-500">{label}</div>
+      <div className="text-xl font-bold">{value}</div>
     </div>
   );
 }

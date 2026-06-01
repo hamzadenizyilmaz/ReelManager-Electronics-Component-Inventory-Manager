@@ -1,38 +1,88 @@
-# Security Notes
+# Security Documentation
 
 ## Authentication
 
-The application uses JWT authentication.
+ReelManager uses JWT-based authentication.
 
-Frontend stores token in:
+Protected API calls require:
 
-- `localStorage` for client requests
-- SameSite cookie for Next middleware route protection
-
-Backend validates token using JWT middleware.
-
-## Frontend Guard
-
-Protected routes are configured in `frontend/middleware.js`.
-
-The API client in `frontend/lib/api.js` automatically attaches:
-
-```text
-Authorization: Bearer TOKEN
+```http
+Authorization: Bearer <token>
 ```
 
-If API returns `401`, the session is cleared and the user is redirected to login.
+## Authorization
 
-## Backend Guard
+Recommended roles:
 
-Protected routes must use backend auth middleware. Frontend checks are not enough for real security.
+```txt
+admin
+user
+viewer
+```
 
-## Production Hardening
+Critical sections should be restricted to administrators:
 
-- Use HTTPS only.
-- Use a strong `JWT_SECRET`.
-- Replace default admin password.
-- Use trusted MySQL certificates.
-- Restrict CORS to production frontend URL.
-- Store provider API keys only in backend `.env`.
-- Keep logs free of secrets and tokens.
+- Settings
+- Users
+- Backup
+- Updates
+- Activity logs
+- API credentials
+
+## Password Storage
+
+Passwords must be hashed with bcrypt or a comparable secure hashing method.
+
+Never store plaintext passwords.
+
+## Sensitive Data
+
+The following values should never be exposed publicly:
+
+```txt
+JWT_SECRET
+DATABASE_URL
+NEXAR_CLIENT_SECRET
+DIGIKEY_CLIENT_SECRET
+MOUSER_API_KEY
+FTP/SFTP passwords
+```
+
+## Logging Security
+
+Activity logs mask sensitive fields such as:
+
+```txt
+password
+token
+secret
+apiKey
+authorization
+clientSecret
+accessToken
+refreshToken
+```
+
+## Update Security
+
+Update execution is disabled by default.
+
+```env
+ALLOW_SYSTEM_UPDATE=false
+```
+
+Only enable it when you fully understand the update workflow.
+
+## Backup Security
+
+Backup files may contain sensitive data. Store them securely and avoid exposing the backup directory publicly.
+
+## Production Recommendations
+
+- Use HTTPS.
+- Use strong JWT secret.
+- Use a restricted database user.
+- Restrict admin routes.
+- Keep `.env` files private.
+- Disable system update execution unless needed.
+- Regularly review activity logs.

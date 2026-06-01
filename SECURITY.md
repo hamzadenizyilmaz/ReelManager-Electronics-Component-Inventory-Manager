@@ -4,6 +4,7 @@
 
 | Version | Status |
 | --- | --- |
+| v2.2.x | Supported |
 | v2.1.x | Supported |
 | v2.0.x | Limited fixes |
 | v1.0.x | Unsupported |

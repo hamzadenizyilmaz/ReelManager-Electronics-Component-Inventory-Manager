@@ -17,71 +17,68 @@ export default function Page() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  async function upload(event) {
-    event.preventDefault();
+  async function upload(e) {
+    e.preventDefault();
 
     if (!file) {
-      toast("Dosya seç", "warning");
-      return;
+      return toast("Dosya seç", "warning");
     }
 
-    const formData = new FormData();
-    formData.append("file", file);
+    const fd = new FormData();
+    fd.append("file", file);
 
     setLoading(true);
 
     try {
-      const data = unwrap(
-        await endpoints.importExport.importComponents(formData)
-      );
+      const data = unwrap(await endpoints.importExport.importComponents(fd));
 
       setRows(data.rows || data.items || data || []);
       toast("Import önizleme hazır", "success");
-    } catch (error) {
-      toast(apiError(error), "error");
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      toast(apiError(err), "error");
     }
+
+    setLoading(false);
   }
 
   const cols = [
     {
       key: "row",
       header: "Satır",
-      render: (row, index) => row.row || index + 1
+      render: (r, i) => r.row || i + 1,
     },
     {
       key: "pn",
       header: "Part",
-      render: (row) =>
-        row.manufacturer_part_number || row.manufacturerPartNumber || "-"
+      render: (r) =>
+        r.manufacturer_part_number || r.manufacturerPartNumber || "-",
     },
     {
       key: "category",
       header: "Kategori",
-      render: (row) => row.category || "-"
+      render: (r) => r.category || "-",
     },
     {
       key: "qty",
       header: "Adet",
-      render: (row) => row.quantity || row.quantity_total || "-"
+      render: (r) => r.quantity || r.quantity_total || "-",
     },
     {
       key: "status",
       header: "Durum",
-      render: (row) =>
-        row.error ? (
+      render: (r) =>
+        r.error ? (
           <span className="chip text-rose-500">Hatalı</span>
         ) : (
           <span className="chip text-emerald-500">OK</span>
-        )
-    }
+        ),
+    },
   ];
 
   return (
     <AppShell>
       <PageHeader
-        eyebrow="Reel Manager - Bulk Operations"
+        eyebrow="Bulk Operations"
         title="CSV / Excel Import"
         description="Toplu komponent listesini yükle, duplicate ve hatalı satırları önizle."
       />
@@ -101,7 +98,7 @@ export default function Page() {
             type="file"
             className="hidden"
             accept=".csv,.xlsx,.xls"
-            onChange={(event) => setFile(event.target.files?.[0])}
+            onChange={(e) => setFile(e.target.files?.[0])}
           />
         </label>
 

@@ -18,14 +18,14 @@ export default function Page() {
   useEffect(() => {
     Promise.allSettled([
       endpoints.dashboard.summary(),
-      endpoints.dashboard.categories()
-    ]).then(([summaryResult, categoriesResult]) => {
-      if (summaryResult.status === "fulfilled") {
-        setSummary(unwrap(summaryResult.value) || {});
+      endpoints.dashboard.categories(),
+    ]).then(([s, c]) => {
+      if (s.status === "fulfilled") {
+        setSummary(unwrap(s.value) || {});
       }
 
-      if (categoriesResult.status === "fulfilled") {
-        setCats(unwrap(categoriesResult.value) || []);
+      if (c.status === "fulfilled") {
+        setCats(unwrap(c.value) || []);
       }
     });
   }, []);
@@ -33,7 +33,7 @@ export default function Page() {
   return (
     <AppShell>
       <PageHeader
-        eyebrow="Reel Manager - Analytics"
+        eyebrow="Analytics"
         title="Raporlar"
         description="Stok dağılımı, kritik listeler ve dışa aktarma merkezi."
         actions={
@@ -48,7 +48,9 @@ export default function Page() {
 
             <button
               className="btn-primary"
-              onClick={() => downloadWithToken(endpoints.importExport.xlsxUrl())}
+              onClick={() =>
+                downloadWithToken(endpoints.importExport.xlsxUrl())
+              }
             >
               <Download className="h-4 w-4" />
               Excel
@@ -87,9 +89,7 @@ export default function Page() {
       </div>
 
       <div className="mt-6">
-        <h2 className="mb-3 text-lg font-black">
-          Kategori Raporu
-        </h2>
+        <h2 className="mb-3 text-lg font-black">Kategori Raporu</h2>
 
         <DistributionChart data={cats} />
       </div>

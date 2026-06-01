@@ -1,6 +1,6 @@
 # ReelManager — Electronics Component Inventory Manager
 
-![Version](https://img.shields.io/badge/version-v2.1.0-blue)
+![Version](https://img.shields.io/badge/version-v2.2.0-blue)
 ![MySQL](https://img.shields.io/badge/Database-MySQL-4479A1)
 ![Prisma](https://img.shields.io/badge/ORM-Prisma-2D3748)
 ![Node.js](https://img.shields.io/badge/Node.js-Express-339933)
@@ -20,7 +20,9 @@
 
 The project is designed for electronics labs, R&D teams, PCB prototyping workflows, production shelves, component boxes and personal or professional component inventory management.
 
-> Current release: **v2.1.0 Enterprise**
+This repository contains the **v2.2.0 Enterprise** release. The release upgrades the previous **v2.1.0 Enterprise** package with a stronger update center, SQL backup export, improved logs, smaller footer, language settings, corporate page copy, update-safe backup workflow and a more stable UI/UX foundation.
+
+> Current release: **v2.2.0 Enterprise**
 
 ---
 

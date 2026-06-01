@@ -1,17 +1,16 @@
 # Support
 
-For help with ReelManager:
+For questions, bugs and feature requests, use GitHub Issues.
 
-1. Check the README.
-2. Check the docs folder.
-3. Review existing GitHub issues.
-4. Open a new issue using the correct template.
+Repository:
 
-Please include:
+https://github.com/hamzadenizyilmaz/ReelManager-Electronics-Component-Inventory-Manager
+
+Before opening an issue, include:
 
 - Operating system
 - Node.js version
 - MySQL version
-- Backend log
-- Frontend browser console error
+- Backend log output
+- Frontend build output
 - Steps to reproduce

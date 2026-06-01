@@ -44,7 +44,7 @@ export default function LabelsPage() {
   return (
     <AppShell>
       <PageHeader
-        eyebrow="Reel Manager - Label Studio"
+        eyebrow="Label Studio"
         title="Etiket Yazdırma Merkezi"
         description="Termal, barkod ve A4 etiket yazıcıları için yalnızca etiket alanını basan, profil tabanlı yazdırma ekranı. Zebra ZPL çıktısı da üretir."
         actions={<button type="button" className="btn-ghost" onClick={selectAll}><Tags className="h-4 w-4" />Listedekileri Seç</button>}
@@ -68,7 +68,7 @@ export default function LabelsPage() {
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-mono text-xs font-black text-brand-600 dark:text-brand-300">{item.internalSku}</div>
                   <div className="truncate text-sm font-black text-slate-900 dark:text-white">{item.manufacturerPartNumber}</div>
-                  <div className="truncate text-xs text-slate-500 dark:text-slate-400">{[item.value, item.packageCase, item.storageLocation?.nameTr || item.storageLocation?.name].filter(Boolean).join(" • ") || "-"}</div>
+                  <div className="truncate text-xs text-slate-500 dark:text-slate-400">{[item.value, item.packageCase, item.storageLocation?.name || item.storageLocation?.nameTr].filter(Boolean).join(" • ") || "-"}</div>
                 </div>
               </label>
             ))}

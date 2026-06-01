@@ -2,17 +2,42 @@ import axios from "axios";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
+const TOKEN_KEYS = ["reel-token", "token", "auth_token", "accessToken", "reelmanager_token", "smd_stock_token"];
+const USER_KEYS = ["reel-user", "user", "reelmanager_user"];
+
 export const api = axios.create({
   baseURL: API_URL,
   timeout: 30000,
   headers: { "Content-Type": "application/json" }
 });
 
-api.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("reel-token");
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+export function getStoredToken() {
+  if (typeof window === "undefined") return null;
+  for (const key of TOKEN_KEYS) {
+    const token = localStorage.getItem(key);
+    if (token) return token;
   }
+  return null;
+}
+
+export function saveAuthSession(token, user = {}) {
+  if (typeof window === "undefined" || !token) return;
+  for (const key of TOKEN_KEYS) localStorage.setItem(key, token);
+  const userJson = JSON.stringify(user || {});
+  for (const key of USER_KEYS) localStorage.setItem(key, userJson);
+  document.cookie = `reel-token=${encodeURIComponent(token)}; Path=/; SameSite=Strict; Max-Age=${60*60*24*7}`;
+}
+
+export function clearAuthSession() {
+  if (typeof window === "undefined") return;
+  for (const key of TOKEN_KEYS) localStorage.removeItem(key);
+  for (const key of USER_KEYS) localStorage.removeItem(key);
+  document.cookie = "reel-token=; Path=/; SameSite=Strict; Max-Age=0";
+}
+
+api.interceptors.request.use((config) => {
+  const token = getStoredToken();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
@@ -21,25 +46,26 @@ api.interceptors.response.use(
   (error) => {
     const status = error?.response?.status;
     if (typeof window !== "undefined" && status === 401) {
-      localStorage.removeItem("reel-token");
-      localStorage.removeItem("reel-user");
-      if (!window.location.pathname.includes("/login")) window.location.href = "/login";
+      clearAuthSession();
+      if (!window.location.pathname.includes("/login")) window.location.href = "/login?reason=session-expired";
     }
     return Promise.reject(error);
   }
 );
 
-export function unwrap(response) {
-  return response?.data?.data ?? response?.data;
-}
-
-export function apiError(error, fallback = "İşlem tamamlanamadı") {
-  return error?.response?.data?.message || error?.message || fallback;
-}
+export function unwrap(response) { return response?.data?.data ?? response?.data; }
+export function apiError(error, fallback = "İşlem tamamlanamadı") { return error?.response?.data?.message || error?.message || fallback; }
 
 export const endpoints = {
   auth: {
-    login: (payload) => api.post("/auth/login", payload),
+    login: async (payload) => {
+      const response = await api.post("/auth/login", payload);
+      const data = response?.data;
+      const token = data?.data?.token || data?.data?.accessToken || data?.data?.access_token || data?.token || data?.accessToken;
+      const user = data?.data?.user || data?.user || {};
+      if (token) saveAuthSession(token, user);
+      return response;
+    },
     me: () => api.get("/auth/me"),
     logout: () => api.post("/auth/logout")
   },
@@ -72,11 +98,7 @@ export const endpoints = {
     enrich: (id, payload = {}) => api.post(`/components/${id}/enrich`, payload),
     bulkEnrich: (payload = {}) => api.post("/components/bulk-enrich", payload)
   },
-  stock: {
-    movements: () => api.get("/stock/movements"),
-    low: () => api.get("/stock/low"),
-    out: () => api.get("/stock/out-of-stock")
-  },
+  stock: { movements: () => api.get("/stock/movements"), low: () => api.get("/stock/low"), out: () => api.get("/stock/out-of-stock") },
   categories: crud("/categories"),
   suppliers: crud("/suppliers"),
   locations: crud("/locations"),
@@ -89,7 +111,6 @@ export const endpoints = {
     reserveStock: (id) => api.post(`/projects/${id}/reserve-stock`),
     consumeStock: (id) => api.post(`/projects/${id}/consume-stock`)
   },
-
   settings: {
     system: () => api.get("/settings/system"),
     updateSystem: (payload) => api.put("/settings/system", payload),
@@ -102,15 +123,8 @@ export const endpoints = {
     csvUrl: () => `${API_URL}/export/components/csv`,
     xlsxUrl: () => `${API_URL}/export/components/xlsx`,
     bomPdfUrl: (id) => `${API_URL}/export/projects/${id}/bom/pdf`
-  }
+  },
+  activity: { list: (params) => api.get("/activity-logs", { params }), summary: () => api.get("/activity-logs/summary") }
 };
-
-function crud(base) {
-  return {
-    list: () => api.get(base),
-    get: (id) => api.get(`${base}/${id}`),
-    create: (payload) => api.post(base, payload),
-    update: (id, payload) => api.put(`${base}/${id}`, payload),
-    remove: (id) => api.delete(`${base}/${id}`)
-  };
-}
+function crud(base) { return { list: () => api.get(base), get: (id) => api.get(`${base}/${id}`), create: (payload) => api.post(base, payload), update: (id, payload) => api.put(`${base}/${id}`, payload), remove: (id) => api.delete(`${base}/${id}`) }; }
+export default api;

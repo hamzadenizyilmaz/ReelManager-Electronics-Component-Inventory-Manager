@@ -220,6 +220,7 @@ export default function LabelPrintPanel({ component, components = [], compact = 
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="flex items-center gap-2 text-lg font-black"><QrCode className="h-5 w-5 text-brand-500" />Etiket Yazdırma</h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Sadece etiket alanı basılır; tüm sayfa yazdırma hatası bu modülle engellenir.</p>
           </div>
           <button type="button" className="btn-primary shrink-0" onClick={printLabels}><Printer className="h-4 w-4" />Etiket Bas</button>
         </div>

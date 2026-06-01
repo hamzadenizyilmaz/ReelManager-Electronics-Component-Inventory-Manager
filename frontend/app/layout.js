@@ -17,7 +17,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata = {
-  title: "Reel Manager | SMD Stock Manager",
+  title: "ReelManager | SMD Stock Manager",
   description: "Enterprise component inventory and BOM management platform"
 };
 
